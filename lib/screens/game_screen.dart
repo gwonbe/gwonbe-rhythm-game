@@ -21,17 +21,44 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
   final _tag = "[GameScreen]";
 
   late final GameEngine engine;
   StreamSubscription<Duration>? subscription;
+
+  // 터치 판정
+  final Set<int> _pressedPads = {};
+  Timer? _judgeTimer;
+  late AnimationController _judgeController;
+  late Animation<double> _judgeScale;
+  late Animation<double> _judgeOpacity;
+  String? _displayJudge;
+
+  // 결과
   bool _resultShown = false;
 
   @override
   void initState() {
     super.initState();
+
     engine = GameEngine();
+
+    _judgeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _judgeScale = Tween<double>(begin: 1.5, end: 1.0).animate(
+      CurvedAnimation(parent: _judgeController, curve: Curves.easeOut,),
+    );
+
+    _judgeOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 15,),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 45,),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 40,),
+    ]).animate(_judgeController);
+
     _initialize();
   }
 
@@ -52,6 +79,8 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _judgeController.dispose();
+    _judgeTimer?.cancel();
     subscription?.cancel();
     engine.audioManager.dispose();
     super.dispose();
@@ -74,9 +103,12 @@ class _GameScreenState extends State<GameScreen> {
 
   void onPadPressed(int pad) {
     final judge = engine.onPadPressed(pad);
+
     if (judge != null) {
       debugPrint("$_tag judge.name : ${judge.name}");
+      showJudge(judge.name.toUpperCase(),);
     }
+
     setState(() {});
   }
 
@@ -90,6 +122,31 @@ class _GameScreenState extends State<GameScreen> {
 
   Note? getEffectNote() {
     return engine.noteManager?.getEffectNote(engine.currentTime.inMilliseconds);
+  }
+
+  void showJudge(String judge) {
+    setState(() {
+      _displayJudge = judge;
+    });
+
+    _judgeController.forward(from: 0.0);
+  }
+
+  Color getJudgeColor() {
+    switch (_displayJudge) {
+      case "PERFECT":
+        return Colors.white;
+      case "GREAT":
+        return Colors.yellow;
+      case "GOOD":
+        return Colors.green;
+      case "BAD":
+        return Colors.orange;
+      case "MISS":
+        return Colors.red;
+      default:
+        return Colors.white;
+    }
   }
 
   void _checkGameFinished() {
@@ -128,23 +185,15 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   Text(
                     "Score : ${engine.scoreManager.score.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 24,),
                   ),
                   Text(
                     "${engine.currentTime.inMilliseconds} ms",
-                    style: const TextStyle(
-                      color: Colors.white70,
-                    ),
+                    style: const TextStyle(color: Colors.white70,),
                   ),
                   Text(
                     engine.state.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 18,),
                   ),
                 ],
               ),
@@ -154,13 +203,23 @@ class _GameScreenState extends State<GameScreen> {
             SizedBox(
               height: 60,
               child: Center(
-                child: Text(
-                  engine.lastJudge?.name.toUpperCase() ?? (engine.lastMissedNote != null ? 'MISS' : ''),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: AnimatedBuilder(
+                  animation: _judgeController,
+                  builder: (context, child) {
+                    if (_displayJudge == null) {
+                      return const SizedBox(height: 40,);
+                    }
+                    return Opacity(
+                      opacity: _judgeOpacity.value,
+                      child: Transform.scale(
+                        scale: _judgeScale.value,
+                        child: Text(
+                          _displayJudge!,
+                          style: TextStyle(color: getJudgeColor(), fontSize: 32, fontWeight: FontWeight.bold,),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -176,12 +235,14 @@ class _GameScreenState extends State<GameScreen> {
                           index: 0,
                           isEffectActive: isPadActive(0),
                           isEffect: isPadEffect(0),
+                          isPressed: _pressedPads.contains(0),
                           onTap: () => onPadPressed(0),
                         ),
                         PadWidget(
                           index: 1,
                           isEffectActive: isPadActive(1),
                           isEffect: isPadEffect(1),
+                          isPressed: _pressedPads.contains(1),
                           onTap: () => onPadPressed(1),
                         ),
                       ],
@@ -194,12 +255,14 @@ class _GameScreenState extends State<GameScreen> {
                           index: 2,
                           isEffectActive: isPadActive(2),
                           isEffect: isPadEffect(2),
+                          isPressed: _pressedPads.contains(2),
                           onTap: () => onPadPressed(2),
                         ),
                         PadWidget(
                           index: 3,
                           isEffectActive: isPadActive(3),
                           isEffect: isPadEffect(3),
+                          isPressed: _pressedPads.contains(3),
                           onTap: () => onPadPressed(3),
                         ),
                       ],

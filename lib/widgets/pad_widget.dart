@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class PadWidget extends StatelessWidget {
   final int index;
-  final bool isEffect;
-  final bool isEffectActive;
+  final bool isEffect; // 노트 타이밍에 패드가 변하는가
+  final bool isEffectActive; // 노트가 활성화되어 있는가
+  final bool isPressed; // 사용자가 방금 터치했는가
   final VoidCallback onTap;
 
   const PadWidget({
@@ -11,6 +12,7 @@ class PadWidget extends StatelessWidget {
     required this.index,
     required this.isEffect,
     required this.isEffectActive,
+    required this.isPressed,
     required this.onTap,
   });
 
@@ -19,8 +21,7 @@ class PadWidget extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 50),
+        child: Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: isEffectActive ? Colors.blue : Colors.grey.shade800,

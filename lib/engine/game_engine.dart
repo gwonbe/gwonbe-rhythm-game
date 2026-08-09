@@ -42,13 +42,14 @@ class GameEngine {
     await audioManager.load(song.musicPath);
     state = GameState.ready;
     noteManager = NoteManager(beatMap!.notes);
-    debugPrint("$_tag 노트 개수 : ${beatMap!.notes.length}");
+    debugPrint("$_tag [loadSong] note count : ${beatMap!.notes.length}");
   }
 
   /// 게임 상태를 playing으로 변경하고 음악 재생 시작
   Future<void> start() async {
     state = GameState.playing;
     await audioManager.play();
+    debugPrint("$_tag [start] START position=${audioManager.currentPosition.inMilliseconds}ms",);
   }
 
   /// 게임 상태를 paused로 변경하고 음악 일시정지
@@ -75,8 +76,8 @@ class GameEngine {
     final missedNote = noteManager?.getMissedNote();
 
     if (missedNote != null) {
+      debugPrint("$_tag [update] MISS : id=${missedNote.id}, pad=${missedNote.pad}, time=${missedNote.time}",);
       final unitScore = 100 / beatMap!.notes.length;
-
       scoreManager.addJudge(Judge.miss, unitScore,);
       lastMissedNote = missedNote;
       missStartTime = currentTime;

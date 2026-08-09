@@ -12,12 +12,10 @@ class NoteManager {
   NoteManager(this.notes);
 
   void update(int currentTime) {
-    debugPrint("$_tag currentTime: $currentTime");
-
     for (final note in notes) {
       if (note.state == NoteState.waiting && currentTime >= note.time - appearTime) {
         note.state = NoteState.active;
-        debugPrint("$_tag ACTIVE id=${note.id} pad=${note.pad} time=${note.time}");
+        debugPrint("$_tag [update] ACTIVE id=${note.id} pad=${note.pad} time=${note.time}");
       }
       if (note.state == NoteState.active && currentTime > note.time + missWindow) {
         note.state = NoteState.miss;
@@ -26,15 +24,15 @@ class NoteManager {
   }
 
   Judge? hit(int pad, int currentTime) {
-    debugPrint("$_tag HIT pad=$pad currentTime=$currentTime");
+    debugPrint("$_tag [hit] pad=$pad currentTime=$currentTime");
 
     for (final note in notes) {
-      debugPrint("$_tag note=${note.id}, pad=${note.pad}, time=${note.time}, state=${note.state}",);
+      debugPrint("$_tag [hit] note=${note.id}, pad=${note.pad}, time=${note.time}, state=${note.state}",);
       if (note.state != NoteState.active) continue;
       if (note.pad != pad) continue;
 
       final diff = (currentTime - note.time).abs();
-      debugPrint("$_tag MATCH note=${note.id} diff=$diff");
+      debugPrint("$_tag [hit] HIT CHEC: pad=$pad, currentTime=$currentTime, note=${note.id}, noteTime=${note.time}, diff=$diff");
 
       // 판정
 
@@ -103,7 +101,11 @@ class NoteManager {
 
   Note? getEffectNote(int currentTime) {
     for (final note in notes) {
-      if (currentTime >= note.time && currentTime < note.time + 150) {
+      if (note.state != NoteState.active) {
+        continue;
+      }
+      if (currentTime >= note.time && currentTime < note.time + 100) {
+        debugPrint("$_tag [getEffectNote] EFFECT id=${note.id}, pad=${note.pad}, currentTime=$currentTime, noteTime=${note.time}",);
         return note;
       }
     }
@@ -113,8 +115,9 @@ class NoteManager {
 
   Note? getMissedNote() {
     for (final note in notes) {
-      if (note.state == NoteState.miss && !note.missDisplayed) {
-        note.missDisplayed = true;
+      if (note.state == NoteState.miss && !note.missProcessed) {
+        note.missProcessed = true;
+        debugPrint("$_tag [getMissedNote] MISSED: id=${note.id}, pad=${note.pad}, time=${note.time}",);
         return note;
       }
     }

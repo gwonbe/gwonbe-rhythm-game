@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dungtak/engine/game_engine.dart';
 import 'package:dungtak/engine/game_state.dart';
-import 'package:dungtak/model/note.dart';
 import 'package:dungtak/model/song.dart';
 import 'package:dungtak/screens/result_screen.dart';
 import 'package:dungtak/widgets/pad_widget.dart';
@@ -88,12 +87,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   bool isPadActive(int pad) {
     final active = engine.noteManager?.activeNotes.any((e) => e.pad == pad) ?? false;
-    debugPrint("$_tag pad=$pad active=$active");
     return active;
   }
 
   bool isPadEffect(int pad) {
-    final note = getEffectNote();
+    final currentTime = engine.currentTime.inMilliseconds;
+    final note = engine.noteManager?.getEffectNote(currentTime);
     return note?.pad == pad;
   }
 
@@ -102,14 +101,30 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void onPadPressed(int pad) {
+    debugPrint("$_tag [onPadPressed] TOUCH, pad=$pad, time=${engine.currentTime.inMilliseconds}",);
+
+    setState(() {
+      _pressedPads.add(pad);
+    });
+
+    Timer(
+      const Duration(milliseconds: 100),
+      () {
+        if (!mounted) return;
+        setState(() {
+          _pressedPads.remove(pad);
+        });
+      },
+    );
+
     final judge = engine.onPadPressed(pad);
 
     if (judge != null) {
-      debugPrint("$_tag judge.name : ${judge.name}");
-      showJudge(judge.name.toUpperCase(),);
+      debugPrint("$_tag [onPadPressed] JUDGE=${judge.name}",);
+      showJudge(judge.name.toUpperCase());
+    } else {
+      debugPrint("$_tag [onPadPressed] NO JUDGE",);
     }
-
-    setState(() {});
   }
 
   double getProgress(int pad) {
@@ -118,10 +133,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   double getPadProgress(int pad) {
     return engine.noteManager?.getPadProgress(pad, engine.currentTime.inMilliseconds,) ?? 0.0;
-  }
-
-  Note? getEffectNote() {
-    return engine.noteManager?.getEffectNote(engine.currentTime.inMilliseconds);
   }
 
   void showJudge(String judge) {

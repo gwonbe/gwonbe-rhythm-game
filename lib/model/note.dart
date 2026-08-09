@@ -7,6 +7,7 @@ class Note {
   bool isHit;
   bool isMissed;
   bool missDisplayed;
+  bool missProcessed;
   bool effectTriggered;
   NoteState state;
 
@@ -18,6 +19,7 @@ class Note {
     this.isHit = false,
     this.isMissed = false,
     this.missDisplayed = false,
+    this.missProcessed = false,
     this.effectTriggered = false,
     this.state = NoteState.waiting,
   });

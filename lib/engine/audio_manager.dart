@@ -19,9 +19,9 @@ class AudioManager {
   Future<void> load(String path) async {
     try {
       await _player.setAsset(path);
-      debugPrint("$_tag Audio loaded : $path");
+      debugPrint("$_tag [load] path : $path");
     } catch (e, stackTrace) {
-      debugPrint("$_tag Audio load error : $e");
+      debugPrint("$_tag [load] error : $e");
       debugPrint(stackTrace.toString());
     }
   }
@@ -29,9 +29,9 @@ class AudioManager {
   Future<void> play() async {
     try {
       await _player.play();
-      debugPrint("$_tag Audio playing");
+      debugPrint("$_tag [play] playing");
     } catch (e) {
-      debugPrint("$_tag Play error : $e");
+      debugPrint("$_tag [play] error : $e");
     }
   }
 

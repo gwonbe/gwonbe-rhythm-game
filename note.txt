@@ -1,0 +1,5 @@
+앱 아이콘 변경 시
+dart run flutter_launcher_icons
+
+Splash 변경 시
+dart run flutter_native_splash:create

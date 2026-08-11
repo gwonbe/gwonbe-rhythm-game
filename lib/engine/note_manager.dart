@@ -6,80 +6,67 @@ import 'package:flutter/cupertino.dart';
 class NoteManager {
 
   final _tag = "[NoteManager]";
-  static const appearTime = 500;
-  static const missWindow = 150;
+
+  static const int appearTime = 800;
+  static const int missWindow = 400; // 색상을 유지할 시간
   final List<Note> notes;
+
   NoteManager(this.notes);
 
   void update(int currentTime) {
     for (final note in notes) {
+      // 이미 처리된 노트
+      if (note.state == NoteState.hit || note.state == NoteState.miss) {
+        continue;
+      }
+
+      // 색상 활성화
       if (note.state == NoteState.waiting && currentTime >= note.time - appearTime) {
         note.state = NoteState.active;
-        debugPrint("$_tag [update] ACTIVE id=${note.id} pad=${note.pad} time=${note.time}");
+        debugPrint("$_tag [update] ACTIVE : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime",);
       }
+
+      // 파란색 상태가 끝남 → MISS
       if (note.state == NoteState.active && currentTime > note.time + missWindow) {
         note.state = NoteState.miss;
+        debugPrint("$_tag [update] MISS : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime");
       }
     }
   }
 
   Judge? hit(int pad, int currentTime) {
-    debugPrint("$_tag [hit] pad=$pad currentTime=$currentTime");
-
     for (final note in notes) {
-      debugPrint("$_tag [hit] note=${note.id}, pad=${note.pad}, time=${note.time}, state=${note.state}",);
-      if (note.state != NoteState.active) continue;
-      if (note.pad != pad) continue;
-
-      final diff = (currentTime - note.time).abs();
-      debugPrint("$_tag [hit] HIT CHEC: pad=$pad, currentTime=$currentTime, note=${note.id}, noteTime=${note.time}, diff=$diff");
-
-      // 판정
-
-      if (diff <= 80) {
-        note.state = NoteState.hit;
-        return Judge.perfect;
-      }
-      if (diff <= 160) {
-        note.state = NoteState.hit;
-        return Judge.great;
-      }
-      if (diff <= 240) {
-        note.state = NoteState.hit;
-        return Judge.good;
-      }
-      if (diff <= 320) {
-        note.state = NoteState.hit;
-        return Judge.bad;
-      }
-
+      if (note.pad != pad) continue; // 다른 패드
+      if (note.state != NoteState.active) continue; // 현재 색칠된 노트 이외는 무시
+      note.state = NoteState.hit; //  색칠된 노트이면 시간 상관없이 판정
+      debugPrint("$_tag [hit] HIT : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime",);
+      return Judge.perfect;
     }
+
+    debugPrint("$_tag [hit] NO ACTIVE NOTE : pad=$pad currentTime=$currentTime",);
 
     return null;
   }
 
   List<Note> get activeNotes {
-    return notes.where((note) {
-      return note.state == NoteState.active;
-    }).toList();
+    return notes.where((note) => note.state == NoteState.active,).toList();
   }
 
   double getProgress(Note note, int currentTime) {
     final start = note.time - appearTime;
 
-    if (currentTime <= start) {
-      return 0.0;
-    } else if (currentTime >= note.time) {
-      return 1.0;
-    } else {
-      return (currentTime - start) / appearTime;
-    }
+    if (currentTime <= start) return 0.0;
+    if (currentTime >= note.time) return 1.0;
+    return (currentTime - start) / appearTime;
   }
 
   double getPadProgress(int pad, int currentTime) {
     for (final note in activeNotes) {
-      if (note.pad == pad) return getProgress(note, currentTime);
+      if (note.pad == pad) {
+        return getProgress(note, currentTime);
+      }
     }
+
     return 0.0;
   }
 
@@ -104,8 +91,8 @@ class NoteManager {
       if (note.state != NoteState.active) {
         continue;
       }
-      if (currentTime >= note.time && currentTime < note.time + 100) {
-        debugPrint("$_tag [getEffectNote] EFFECT id=${note.id}, pad=${note.pad}, currentTime=$currentTime, noteTime=${note.time}",);
+      if (currentTime >= note.time &&
+          currentTime < note.time + 100) {
         return note;
       }
     }

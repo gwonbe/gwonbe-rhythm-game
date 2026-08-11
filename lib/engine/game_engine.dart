@@ -48,7 +48,7 @@ class GameEngine {
   /// 게임 상태를 playing으로 변경하고 음악 재생 시작
   Future<void> start() async {
     state = GameState.playing;
-    await audioManager.play();
+    audioManager.play();
     debugPrint("$_tag [start] START position=${audioManager.currentPosition.inMilliseconds}ms",);
   }
 
@@ -72,7 +72,10 @@ class GameEngine {
 
   /// 게임 시간에 맞춰 노트 상태를 업데이트하고 MISS 및 게임 종료 여부 확인
   void update(int currentTime) {
+    // 노트 상태 업데이트는 NoteManager가 담당
     noteManager?.update(currentTime);
+
+    // MISS 처리
     final missedNote = noteManager?.getMissedNote();
 
     if (missedNote != null) {
@@ -83,6 +86,7 @@ class GameEngine {
       missStartTime = currentTime;
     }
 
+    // MISS 표시 시간
     if (lastMissedNote != null) {
       if (currentTime - missStartTime >= 500) {
         lastMissedNote = null;
@@ -91,12 +95,10 @@ class GameEngine {
 
     // 게임 종료 확인
     if (beatMap != null && noteManager != null) {
-      final allFinished = noteManager!.notes.every((Note note) => note.state == NoteState.hit || note.state == NoteState.miss,);
-      if (allFinished) {
+      final allFinished = noteManager!.notes.every((Note note) => note.state == NoteState.hit || note.state == NoteState.miss);
+      if (allFinished && noteManager!.notes.isNotEmpty) {
         final lastNoteTime = noteManager!.notes.map((Note note) => note.time).reduce((a, b) => a > b ? a : b);
-        if (currentTime > lastNoteTime + 300) {
-          finish();
-        }
+        if (currentTime > lastNoteTime + 300) finish();
       }
     }
   }

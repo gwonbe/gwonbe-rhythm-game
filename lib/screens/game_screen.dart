@@ -27,7 +27,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   StreamSubscription<Duration>? subscription;
 
   // 터치 판정
-  final Set<int> _pressedPads = {};
   Timer? _judgeTimer;
   late AnimationController _judgeController;
   late Animation<double> _judgeScale;
@@ -65,10 +64,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     await engine.loadSong(widget.song);
 
     subscription = engine.audioManager.positionStream.listen((position) {
+      debugPrint("$_tag [_initialize] POSITION ${position.inMilliseconds}");
       engine.update(position.inMilliseconds);
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {});
       _checkGameFinished();
     });
@@ -101,29 +99,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void onPadPressed(int pad) {
-    debugPrint("$_tag [onPadPressed] TOUCH, pad=$pad, time=${engine.currentTime.inMilliseconds}",);
-
-    setState(() {
-      _pressedPads.add(pad);
-    });
-
-    Timer(
-      const Duration(milliseconds: 100),
-      () {
-        if (!mounted) return;
-        setState(() {
-          _pressedPads.remove(pad);
-        });
-      },
-    );
+    final currentTime = engine.currentTime.inMilliseconds;
+    debugPrint("$_tag [onPadPressed] TOUCH pad=$pad time=$currentTime",);
 
     final judge = engine.onPadPressed(pad);
-
     if (judge != null) {
       debugPrint("$_tag [onPadPressed] JUDGE=${judge.name}",);
       showJudge(judge.name.toUpperCase());
-    } else {
-      debugPrint("$_tag [onPadPressed] NO JUDGE",);
     }
   }
 
@@ -246,14 +228,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                           index: 0,
                           isEffectActive: isPadActive(0),
                           isEffect: isPadEffect(0),
-                          isPressed: _pressedPads.contains(0),
                           onTap: () => onPadPressed(0),
                         ),
                         PadWidget(
                           index: 1,
                           isEffectActive: isPadActive(1),
                           isEffect: isPadEffect(1),
-                          isPressed: _pressedPads.contains(1),
                           onTap: () => onPadPressed(1),
                         ),
                       ],
@@ -266,14 +246,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                           index: 2,
                           isEffectActive: isPadActive(2),
                           isEffect: isPadEffect(2),
-                          isPressed: _pressedPads.contains(2),
                           onTap: () => onPadPressed(2),
                         ),
                         PadWidget(
                           index: 3,
                           isEffectActive: isPadActive(3),
                           isEffect: isPadEffect(3),
-                          isPressed: _pressedPads.contains(3),
                           onTap: () => onPadPressed(3),
                         ),
                       ],
@@ -282,6 +260,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
+
           ],
         ),
       ),

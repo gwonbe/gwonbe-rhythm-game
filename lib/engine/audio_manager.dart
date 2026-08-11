@@ -28,7 +28,7 @@ class AudioManager {
 
   Future<void> play() async {
     try {
-      await _player.play();
+      _player.play();
       debugPrint("$_tag [play] playing");
     } catch (e) {
       debugPrint("$_tag [play] error : $e");

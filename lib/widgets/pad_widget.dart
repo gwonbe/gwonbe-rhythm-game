@@ -47,7 +47,7 @@ class _PadWidgetState extends State<PadWidget> {
           _press();
         },
         child: Container(
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: _pressed ? Colors.blue[600] : widget.isEffectActive ? Colors.blue : Colors.grey.shade800,
             borderRadius: BorderRadius.circular(12),

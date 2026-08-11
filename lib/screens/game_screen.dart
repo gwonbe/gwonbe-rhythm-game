@@ -168,39 +168,24 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // 정보
-            SizedBox(
-              height: 100,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Score : ${engine.scoreManager.score.toStringAsFixed(2)}",
-                    style: const TextStyle(color: Colors.white, fontSize: 24,),
-                  ),
-                  Text(
-                    "${engine.currentTime.inMilliseconds} ms",
-                    style: const TextStyle(color: Colors.white70,),
-                  ),
-                  Text(
-                    engine.state.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 18,),
-                  ),
-                ],
-              ),
+            // 점수
+            Text(
+              "${engine.scoreManager.score.toStringAsFixed(2)}",
+              style: const TextStyle(color: Colors.white, fontSize: 24,),
             ),
 
             // 판정
             SizedBox(
-              height: 60,
+              height: 40,
               child: Center(
                 child: AnimatedBuilder(
                   animation: _judgeController,
                   builder: (context, child) {
                     if (_displayJudge == null) {
-                      return const SizedBox(height: 40,);
+                      return const SizedBox(width: 1,);
                     }
                     return Opacity(
                       opacity: _judgeOpacity.value,
@@ -208,7 +193,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                         scale: _judgeScale.value,
                         child: Text(
                           _displayJudge!,
-                          style: TextStyle(color: getJudgeColor(), fontSize: 32, fontWeight: FontWeight.bold,),
+                          style: TextStyle(color: getJudgeColor(), fontSize: 30, fontWeight: FontWeight.bold,),
                         ),
                       ),
                     );

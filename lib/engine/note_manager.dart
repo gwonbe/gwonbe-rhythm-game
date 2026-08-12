@@ -7,12 +7,13 @@ class NoteManager {
 
   final _tag = "[NoteManager]";
 
-  static const int appearTime = 800;
-  static const int missWindow = 400; // 색상을 유지할 시간
+  static const int appearTime = 800; // 노트 색상이 바뀌는 시작하는 시간
+  static const int missWindow = 400; // 노트 시간이 지난 후에도 활성화 상태를 유지하는 시간
   final List<Note> notes;
 
   NoteManager(this.notes);
 
+  // 노트 진행 업데이트
   void update(int currentTime) {
     for (final note in notes) {
       // 이미 처리된 노트
@@ -20,13 +21,12 @@ class NoteManager {
         continue;
       }
 
-      // 색상 활성화
+      // WAITING -> ACTIVE
       if (note.state == NoteState.waiting && currentTime >= note.time - appearTime) {
         note.state = NoteState.active;
-        debugPrint("$_tag [update] ACTIVE : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime",);
       }
 
-      // 파란색 상태가 끝남 → MISS
+      // ACTIVE -> MISS
       if (note.state == NoteState.active && currentTime > note.time + missWindow) {
         note.state = NoteState.miss;
         debugPrint("$_tag [update] MISS : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime");
@@ -34,42 +34,80 @@ class NoteManager {
     }
   }
 
-  Judge? hit(int pad, int currentTime) {
+  // 활성화 노트인지 확인
+  bool hasActiveNote(int pad) {
     for (final note in notes) {
-      if (note.pad != pad) continue; // 다른 패드
-      if (note.state != NoteState.active) continue; // 현재 색칠된 노트 이외는 무시
-      note.state = NoteState.hit; //  색칠된 노트이면 시간 상관없이 판정
-      debugPrint("$_tag [hit] HIT : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime",);
-      return Judge.perfect;
-    }
-
-    debugPrint("$_tag [hit] NO ACTIVE NOTE : pad=$pad currentTime=$currentTime",);
-
-    return null;
-  }
-
-  List<Note> get activeNotes {
-    return notes.where((note) => note.state == NoteState.active,).toList();
-  }
-
-  double getProgress(Note note, int currentTime) {
-    final start = note.time - appearTime;
-
-    if (currentTime <= start) return 0.0;
-    if (currentTime >= note.time) return 1.0;
-    return (currentTime - start) / appearTime;
-  }
-
-  double getPadProgress(int pad, int currentTime) {
-    for (final note in activeNotes) {
-      if (note.pad == pad) {
-        return getProgress(note, currentTime);
+      if (note.pad == pad && note.state == NoteState.active) {
+        return true;
       }
     }
 
-    return 0.0;
+    return false;
   }
 
+  List<Note> get activeNotes {
+    return notes.where((note) => note.state == NoteState.active).toList();
+  }
+
+  // HIT
+  Judge? hit(int pad, int currentTime) {
+    Note? targetNote;
+    int smallestDistance = 1 << 30;
+
+    // 현재 패드에서 활성화된 노트 중 현재 시간과 가장 가까운 노트를 찾는다.
+    for (final note in notes) {
+      if (note.pad != pad) continue;
+      if (note.state != NoteState.active) continue;
+
+      final distance = (currentTime - note.time).abs();
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        targetNote = note;
+      }
+    }
+
+    // 활성 노트가 없을 때
+    if (targetNote == null) return null;
+
+    // hit 처리
+    targetNote.state = NoteState.hit;
+    return Judge.perfect;
+  }
+
+  // 진행상태 반환
+  double getProgress(Note note, int currentTime) {
+    final start = note.time - appearTime;
+
+    if (currentTime <= start) {
+      return 0.0;
+    } else if (currentTime >= note.time) {
+      return 1.0;
+    } else {
+      return (currentTime - start) / appearTime;
+    }
+  }
+
+  // 패드 진행상태 반환
+  double getPadProgress(int pad, int currentTime) {
+    Note? target;
+    int smallestDistance = 1 << 30;
+
+    for (final note in notes) {
+      if (note.pad != pad) continue;
+      if (note.state != NoteState.active) continue;
+
+      final distance = (currentTime - note.time).abs();
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        target = note;
+      }
+    }
+
+    if (target == null) return 0.0;
+    return getProgress(target, currentTime);
+  }
+
+  // Effect
   List<Note> getTriggeredNotes(int currentTime) {
     final result = <Note>[];
 
@@ -91,8 +129,7 @@ class NoteManager {
       if (note.state != NoteState.active) {
         continue;
       }
-      if (currentTime >= note.time &&
-          currentTime < note.time + 100) {
+      if (currentTime >= note.time && currentTime < note.time + 100) {
         return note;
       }
     }
@@ -100,11 +137,11 @@ class NoteManager {
     return null;
   }
 
+  // MISS
   Note? getMissedNote() {
     for (final note in notes) {
       if (note.state == NoteState.miss && !note.missProcessed) {
         note.missProcessed = true;
-        debugPrint("$_tag [getMissedNote] MISSED: id=${note.id}, pad=${note.pad}, time=${note.time}",);
         return note;
       }
     }

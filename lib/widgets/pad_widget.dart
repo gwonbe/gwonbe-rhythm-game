@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class PadWidget extends StatefulWidget {
   final int index;
-  final bool isEffectActive;
-  final bool isEffect;
+  final bool isEffectActive; // 현재 노트가 파란색으로 활성화되어 있는지
+  final bool isEffect; // 노트 타격 순간의 이펙트
   final VoidCallback onTap;
 
   const PadWidget({
@@ -20,15 +22,16 @@ class PadWidget extends StatefulWidget {
 
 class _PadWidgetState extends State<PadWidget> {
   bool _pressed = false;
+  Timer? _pressTimer;
 
+  // Pointer Down
   void _press() {
-    setState(() {
-      _pressed = true;
-    });
+    _pressTimer?.cancel();
+    setState(() { _pressed = true; });
+    widget.onTap(); // 판정은 즉시 실행
 
-    widget.onTap();
-
-    Future.delayed(
+    // 시각적인 눌림 효과만 100ms 유지
+    _pressTimer = Timer(
       const Duration(milliseconds: 100), () {
         if (!mounted) return;
         setState(() {
@@ -39,7 +42,25 @@ class _PadWidgetState extends State<PadWidget> {
   }
 
   @override
+  void dispose() {
+    _pressTimer?.cancel();
+    super.dispose();
+  }
+
+  // Build
+
+  @override
   Widget build(BuildContext context) {
+    Color backgroundColor;
+
+    if (_pressed) {
+      backgroundColor = Colors.blue.shade600;
+    } else if (widget.isEffectActive) {
+      backgroundColor = Colors.blue;
+    } else {
+      backgroundColor = Colors.grey.shade800;
+    }
+
     return Expanded(
       child: Listener(
         behavior: HitTestBehavior.opaque,
@@ -49,7 +70,7 @@ class _PadWidgetState extends State<PadWidget> {
         child: Container(
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: _pressed ? Colors.blue[600] : widget.isEffectActive ? Colors.blue : Colors.grey.shade800,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(

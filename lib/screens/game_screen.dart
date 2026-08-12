@@ -21,20 +21,18 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
-  final _tag = "[GameScreen]";
 
   late final GameEngine engine;
   StreamSubscription<Duration>? subscription;
 
-  // 터치 판정
-  Timer? _judgeTimer;
+  // 판정 표시
   late AnimationController _judgeController;
   late Animation<double> _judgeScale;
   late Animation<double> _judgeOpacity;
   String? _displayJudge;
 
   // 결과
-  bool _resultShown = false;
+  bool _resultShown = false; // 결과 화면 중복 진입 방지
 
   @override
   void initState() {
@@ -60,16 +58,21 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _initialize();
   }
 
+  // 초기화
   Future<void> _initialize() async {
     await engine.loadSong(widget.song);
 
-    subscription = engine.audioManager.positionStream.listen((position) {
-      debugPrint("$_tag [_initialize] POSITION ${position.inMilliseconds}");
-      engine.update(position.inMilliseconds);
-      if (!mounted) return;
-      setState(() {});
-      _checkGameFinished();
-    });
+    if (!mounted) return;
+
+    subscription = engine.audioManager.positionStream.listen(
+      (position) {
+        final currentTime = position.inMilliseconds;
+        engine.update(currentTime); // 음악 position 기준으로 게임 상태 업데이트
+        if (!mounted) return;
+        setState(() {});
+        _checkGameFinished();
+      },
+    );
 
     await engine.start();
   }
@@ -77,54 +80,44 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _judgeController.dispose();
-    _judgeTimer?.cancel();
     subscription?.cancel();
     engine.audioManager.dispose();
     super.dispose();
   }
 
+  // Pad
   bool isPadActive(int pad) {
-    final active = engine.noteManager?.activeNotes.any((e) => e.pad == pad) ?? false;
-    return active;
+    return engine.noteManager?.hasActiveNote(pad) ?? false;
   }
 
+  // Pad Effect
   bool isPadEffect(int pad) {
     final currentTime = engine.currentTime.inMilliseconds;
     final note = engine.noteManager?.getEffectNote(currentTime);
     return note?.pad == pad;
   }
 
-  bool isPadEffectActive(int pad) {
-    return engine.effectNote?.pad == pad;
-  }
-
+  // 패드를 눌렀을 때
   void onPadPressed(int pad) {
-    final currentTime = engine.currentTime.inMilliseconds;
-    debugPrint("$_tag [onPadPressed] TOUCH pad=$pad time=$currentTime",);
-
     final judge = engine.onPadPressed(pad);
-    if (judge != null) {
-      debugPrint("$_tag [onPadPressed] JUDGE=${judge.name}",);
-      showJudge(judge.name.toUpperCase());
-    }
+    if (judge != null) showJudge(judge.name.toUpperCase());
+    if (mounted) setState(() {}); // 터치 직후 UI를 즉시 갱신
+    _checkGameFinished();
   }
 
-  double getProgress(int pad) {
-    return engine.noteManager?.getPadProgress(pad, engine.currentTime.inMilliseconds,) ?? 0.0;
-  }
-
+  // 패드 진행상태 반환
   double getPadProgress(int pad) {
-    return engine.noteManager?.getPadProgress(pad, engine.currentTime.inMilliseconds,) ?? 0.0;
+    return engine.noteManager?.getPadProgress(pad, engine.currentTime.inMilliseconds) ?? 0.0;
   }
 
+  // 판정
   void showJudge(String judge) {
-    setState(() {
-      _displayJudge = judge;
-    });
-
+    if (!mounted) return;
+    setState(() {_displayJudge = judge;});
     _judgeController.forward(from: 0.0);
   }
 
+  // 판정별 텍스트 컬러 반환
   Color getJudgeColor() {
     switch (_displayJudge) {
       case "PERFECT":
@@ -142,7 +135,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     }
   }
 
+  // 게임 종료
   void _checkGameFinished() {
+    if (!mounted) return;
     if (engine.state != GameState.finished) return;
     if (_resultShown) return;
 
@@ -162,6 +157,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     );
   }
 
+  // Build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,8 +169,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
             // 점수
             Text(
-              "${engine.scoreManager.score.toStringAsFixed(2)}",
-              style: const TextStyle(color: Colors.white, fontSize: 24,),
+              engine.scoreManager.score.toStringAsFixed(2),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+              ),
             ),
 
             // 판정
@@ -185,7 +184,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   animation: _judgeController,
                   builder: (context, child) {
                     if (_displayJudge == null) {
-                      return const SizedBox(width: 1,);
+                      return const SizedBox(
+                        width: 1,
+                      );
                     }
                     return Opacity(
                       opacity: _judgeOpacity.value,
@@ -193,7 +194,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                         scale: _judgeScale.value,
                         child: Text(
                           _displayJudge!,
-                          style: TextStyle(color: getJudgeColor(), fontSize: 30, fontWeight: FontWeight.bold,),
+                          style: TextStyle(
+                            color: getJudgeColor(),
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     );
@@ -245,11 +250,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
-
           ],
         ),
       ),
     );
   }
-  
 }

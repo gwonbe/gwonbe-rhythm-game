@@ -8,11 +8,17 @@ class AudioManager {
 
   // getter
 
-  AudioPlayer get player => _player;
+  AudioPlayer get player {
+    return _player;
+  }
 
-  Duration get currentPosition => _player.position;
+  Duration get currentPosition {
+    return _player.position;
+  }
 
-  Stream<Duration> get positionStream => _player.positionStream;
+  Stream<Duration> get positionStream {
+    return _player.positionStream;
+  }
 
   // function
 
@@ -28,7 +34,7 @@ class AudioManager {
 
   Future<void> play() async {
     try {
-      _player.play();
+      await _player.play();
       debugPrint("$_tag [play] playing");
     } catch (e) {
       debugPrint("$_tag [play] error : $e");

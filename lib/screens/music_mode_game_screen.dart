@@ -3,24 +3,24 @@ import 'dart:async';
 import 'package:dungtak/engine/game_engine.dart';
 import 'package:dungtak/engine/game_state.dart';
 import 'package:dungtak/model/song.dart';
-import 'package:dungtak/screens/result_screen.dart';
+import 'package:dungtak/screens/music_mode_result_screen.dart';
 import 'package:dungtak/widgets/pad_widget.dart';
 
 import 'package:flutter/material.dart';
 
-class GameScreen extends StatefulWidget {
+class MusicModeGameScreen extends StatefulWidget {
   final Song song;
 
-  const GameScreen({
+  const MusicModeGameScreen({
     super.key,
     required this.song,
   });
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  State<MusicModeGameScreen> createState() => _MusicModeGameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
+class _MusicModeGameScreenState extends State<MusicModeGameScreen> with SingleTickerProviderStateMixin {
 
   late final GameEngine engine;
   StreamSubscription<Duration>? subscription;
@@ -147,7 +147,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       context,
       PageRouteBuilder(
         pageBuilder: (_, animation, secondaryAnimation) {
-          return ResultScreen(
+          return MusicModeResultScreen(
             scoreManager: engine.scoreManager,
           );
         },

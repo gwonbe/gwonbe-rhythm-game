@@ -2,10 +2,10 @@ import 'package:dungtak/engine/score_manager.dart';
 
 import 'package:flutter/material.dart';
 
-class ResultScreen extends StatelessWidget {
+class MusicModeResultScreen extends StatelessWidget {
   final ScoreManager scoreManager;
 
-  const ResultScreen({
+  const MusicModeResultScreen({
     super.key,
     required this.scoreManager,
   });

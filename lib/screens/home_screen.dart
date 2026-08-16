@@ -1,5 +1,4 @@
-import 'package:dungtak/model/song.dart';
-import 'package:dungtak/screens/game_screen.dart';
+import 'package:dungtak/screens/music_mode_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -38,15 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    final song = Song(
-      title: "Sample",
-      artist: "Unknown",
-      musicPath: "assets/music/sample.mp3",
-      beatMapPath: "assets/beatmaps/sample.json",
-      imagePath: "",
-    );
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -66,14 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       context,
                       PageRouteBuilder(
                         pageBuilder: (_, animation, secondaryAnimation) {
-                          return GameScreen(song: song);
+                          return const MusicModeScreen();
                         },
                         transitionDuration: Duration.zero,
                         reverseTransitionDuration: Duration.zero,
                       ),
                     );
                   },
-                  child: const Text("START"),
+                  child: const Text("MUSIC MODE"),
                 ),
               ),
             ),

@@ -34,6 +34,7 @@ flutter:
   assets:
     - assets/beatmaps/
     - assets/music/
+    - assets/cover/
 
 flutter_native_splash:
   android: true

@@ -164,46 +164,107 @@ class _MusicModeGameScreenState extends State<MusicModeGameScreen> with SingleTi
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // 점수
-            Text(
-              engine.scoreManager.score.toStringAsFixed(2),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
-            ),
-
-            // 판정
+            // 상단 정보 영역
             SizedBox(
-              height: 40,
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _judgeController,
-                  builder: (context, child) {
-                    if (_displayJudge == null) {
-                      return const SizedBox(
-                        width: 1,
-                      );
-                    }
-                    return Opacity(
-                      opacity: _judgeOpacity.value,
-                      child: Transform.scale(
-                        scale: _judgeScale.value,
-                        child: Text(
-                          _displayJudge!,
-                          style: TextStyle(
-                            color: getJudgeColor(),
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
+              height: 80,
+              child: Row(
+                children: [
+
+                  // 곡 정보
+                  Expanded(
+                    child: Row(
+                      children: [
+
+                        // 앨범 커버
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(widget.song.imagePath, width: 60, height: 60, fit: BoxFit.cover),
                           ),
                         ),
+
+                        // 제목 + 아티스트
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.song.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(
+                                height: 3,
+                              ),
+                              Text(
+                                widget.song.artist,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 현재 판정
+                  Expanded(
+                    child: SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _judgeController,
+                          builder: (context, child) {
+                            if (_displayJudge == null) {
+                              return const SizedBox(width: 1);
+                            }
+                            return Opacity(
+                              opacity: _judgeOpacity.value,
+                              child: Transform.scale(
+                                scale: _judgeScale.value,
+                                child: Text(
+                                  _displayJudge!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: getJudgeColor(), fontSize: 28, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+
+                  // 현재 점수
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            engine.scoreManager.score.toStringAsFixed(2),
+                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            "SCORE",
+                            style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                ],
               ),
             ),
 
@@ -255,4 +316,5 @@ class _MusicModeGameScreenState extends State<MusicModeGameScreen> with SingleTi
       ),
     );
   }
+
 }

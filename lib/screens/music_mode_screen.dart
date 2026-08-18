@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
+
 import 'package:dungtak/data/songs.dart';
 import 'package:dungtak/model/song.dart';
 import 'package:dungtak/screens/music_mode_game_screen.dart';
@@ -13,6 +17,11 @@ class MusicModeScreen extends StatefulWidget {
 
 class _MusicModeScreenState extends State<MusicModeScreen> {
 
+  // 곡 미리듣기
+  final AudioPlayer _previewPlayer = AudioPlayer();
+  Timer? _previewTimer;
+  Timer? _previewDelayTimer;
+
   // 좌우 이동
   final int _jumpCount = 5;
 
@@ -20,19 +29,66 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
   int _selectedIndex = 0;
   Song get _selectedSong => musicModeSongs[_selectedIndex];
 
+  // initState
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playPreview();
+    });
+  }
+
+  // dispose
+  @override
+  void dispose() {
+    _previewTimer?.cancel();
+    _previewDelayTimer?.cancel();
+    _previewPlayer.dispose();
+
+    super.dispose();
+  }
+
   // 곡 이동 - amount 만큼
   void _move(int amount) {
     if (musicModeSongs.isEmpty) return;
 
+    int newIndex = _selectedIndex + amount;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= musicModeSongs.length) newIndex = musicModeSongs.length - 1;
+
+    if (newIndex == _selectedIndex) return; // 실제로 곡이 바뀐 경우
+
     setState(() {
-      _selectedIndex += amount;
-      if (_selectedIndex < 0) {
-        _selectedIndex = 0;
-      }
-      if (_selectedIndex >= musicModeSongs.length) {
-        _selectedIndex = musicModeSongs.length - 1;
-      }
+      _selectedIndex = newIndex;
     });
+
+    _playPreview();
+  }
+
+  // 미리듣기 재생
+  Future<void> _playPreview() async {
+    _previewTimer?.cancel();
+    _previewDelayTimer?.cancel();
+    await _previewPlayer.stop();
+
+    final song = _selectedSong;
+    await _previewPlayer.setSource(AssetSource(song.musicPath.replaceFirst("assets/", "")));
+    await _previewPlayer.seek(song.previewStart);
+    await _previewPlayer.resume();
+
+    _previewTimer = Timer(
+      song.previewEnd - song.previewStart,
+      () async {
+        await _previewPlayer.pause();
+        _previewDelayTimer = Timer(
+          const Duration(seconds: 2),
+          () {
+            if (mounted) _playPreview();
+          },
+        );
+      },
+    );
   }
 
   // 게임 시작
@@ -56,6 +112,7 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
+  // 위젯 빌드
   @override
   Widget build(BuildContext context) {
     return Scaffold(

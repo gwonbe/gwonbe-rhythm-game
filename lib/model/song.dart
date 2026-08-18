@@ -5,6 +5,8 @@ class Song {
   final String musicPath;
   final String beatMapPath;
   final String imagePath;
+  final Duration previewStart;
+  final Duration previewEnd;
 
   Song({
     required this.title,
@@ -12,6 +14,8 @@ class Song {
     required this.musicPath,
     required this.beatMapPath,
     required this.imagePath,
+    required this.previewStart,
+    required this.previewEnd,
   });
 
 }

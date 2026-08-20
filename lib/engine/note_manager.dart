@@ -1,12 +1,13 @@
 import 'package:dungtak/engine/score_manager.dart';
 import 'package:dungtak/model/note.dart';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class NoteManager {
 
   final _tag = "[NoteManager]";
 
+  static const Color noteColor = Colors.blue;
   static const int appearTime = 800; // 노트 색상이 바뀌는 시작하는 시간
   static const int missWindow = 400; // 노트 시간이 지난 후에도 활성화 상태를 유지하는 시간
   final List<Note> notes;
@@ -52,26 +53,48 @@ class NoteManager {
   // HIT
   Judge? hit(int pad, int currentTime) {
     Note? targetNote;
-    int smallestDistance = 1 << 30;
 
     // 현재 패드에서 활성화된 노트 중 현재 시간과 가장 가까운 노트를 찾는다.
     for (final note in notes) {
       if (note.pad != pad) continue;
       if (note.state != NoteState.active) continue;
-
-      final distance = (currentTime - note.time).abs();
-      if (distance < smallestDistance) {
-        smallestDistance = distance;
-        targetNote = note;
-      }
+      targetNote = note;
+      break;
     }
 
     // 활성 노트가 없을 때
     if (targetNote == null) return null;
 
     // hit 처리
+    final startTime = targetNote.time - appearTime;
+    final elapsed = currentTime - startTime;
     targetNote.state = NoteState.hit;
-    return Judge.perfect;
+
+    if (elapsed <= 100) {
+      return Judge.perfect;
+    } else if (elapsed <= 300) {
+      return Judge.great;
+    } else if (elapsed <= 500) {
+      return Judge.good;
+    } else {
+      return Judge.bad;
+    }
+  }
+
+  // 색상 계산
+  Color getNoteColor(Note note, int currentTime) {
+    final startTime = note.time - appearTime;
+    if (currentTime <= startTime) {
+      return noteColor;
+    }
+
+    final elapsed = currentTime - startTime;
+    if (elapsed >= appearTime) {
+      return Colors.grey;
+    }
+
+    final progress = elapsed / appearTime;
+    return Color.lerp(noteColor, Colors.grey, progress,)!;
   }
 
   // 진행상태 반환
@@ -107,7 +130,7 @@ class NoteManager {
     return getProgress(target, currentTime);
   }
 
-  // Effect
+  // 노트 반환
   List<Note> getTriggeredNotes(int currentTime) {
     final result = <Note>[];
 
@@ -124,6 +147,7 @@ class NoteManager {
     return result;
   }
 
+  // Effect
   Note? getEffectNote(int currentTime) {
     for (final note in notes) {
       if (note.state != NoteState.active) {

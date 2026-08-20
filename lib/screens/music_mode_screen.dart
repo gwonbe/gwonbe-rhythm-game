@@ -92,7 +92,13 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
   }
 
   // 게임 시작
-  void _startGame() {
+  Future<void> _startGame() async {
+    _previewTimer?.cancel();
+    _previewDelayTimer?.cancel();
+    await _previewPlayer.stop();
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       PageRouteBuilder(

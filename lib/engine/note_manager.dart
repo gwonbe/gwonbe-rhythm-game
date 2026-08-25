@@ -70,11 +70,11 @@ class NoteManager {
     final elapsed = currentTime - startTime;
     targetNote.state = NoteState.hit;
 
-    if (elapsed <= 100) {
+    if (elapsed <= 500) {
       return Judge.perfect;
-    } else if (elapsed <= 300) {
+    } else if (elapsed <= 700) {
       return Judge.great;
-    } else if (elapsed <= 500) {
+    } else if (elapsed <= 900) {
       return Judge.good;
     } else {
       return Judge.bad;

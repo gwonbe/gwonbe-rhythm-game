@@ -1,3 +1,4 @@
+import 'package:dungtak/constants/constants.dart';
 import 'package:dungtak/engine/score_manager.dart';
 import 'package:flutter/material.dart';
 
@@ -61,8 +62,8 @@ class ResultScreen extends StatelessWidget {
                           _ResultRow(title: "GOOD", value: scoreManager.good, isBold: false,),
                           _ResultRow(title: "BAD", value: scoreManager.bad, isBold: false,),
                           _ResultRow(title: "MISS", value: scoreManager.miss, isBold: false,),
+                          Container( height:1.0, color:Colors.white,),
                           _ResultRow(title: "MAX COMBO", value: scoreManager.maxCombo, isBold: true,),
-                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
@@ -76,7 +77,10 @@ class ResultScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
-                onPressed: () {Navigator.popUntil(context, (route) => route.isFirst);},
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
                 child: const Text("HOME"),
               )
             ],
@@ -110,8 +114,8 @@ class _ResultRow extends StatelessWidget {
             child: Text(
               title,
               style: isBold
-                  ? const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
-                  : const TextStyle(color: Colors.white, fontSize: 20),
+                  ? const TextStyle(color: Colors.white, fontSize: Constants.resultRowFontSize, fontWeight: FontWeight.bold)
+                  : const TextStyle(color: Colors.white, fontSize: Constants.resultRowFontSize),
             ),
           ),
           const SizedBox(width: 5),
@@ -121,7 +125,7 @@ class _ResultRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: Constants.resultRowFontSize,
                 fontWeight: FontWeight.bold,
               ),
             ),

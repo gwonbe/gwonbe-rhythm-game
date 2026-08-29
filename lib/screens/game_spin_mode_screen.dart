@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:dungtak/constants/game_constants.dart';
+import 'package:dungtak/constants/constants.dart';
 import 'package:dungtak/engine/game_engine.dart';
 import 'package:dungtak/engine/game_state.dart';
 import 'package:dungtak/engine/rotation_manager.dart';
 import 'package:dungtak/model/song.dart';
 import 'package:dungtak/screens/result_screen.dart';
+import 'package:dungtak/util/util.dart';
 import 'package:dungtak/widgets/spin_board_widget.dart';
 
 import 'package:flutter/material.dart';
@@ -130,7 +131,7 @@ class _GameSpinModeScreenState extends State<GameSpinModeScreen> with TickerProv
   // 패드 색상
   Color getPadColor(int pad) {
     final manager = engine.noteManager;
-    if (manager == null) return GameConstants.noteColorActive;
+    if (manager == null) return Constants.noteColorActive;
 
     final currentTime = engine.currentTime.inMilliseconds;
 
@@ -140,7 +141,7 @@ class _GameSpinModeScreenState extends State<GameSpinModeScreen> with TickerProv
       }
     }
 
-    return GameConstants.noteColorActive;
+    return Constants.noteColorActive;
   }
 
   // 패드 터치
@@ -156,24 +157,6 @@ class _GameSpinModeScreenState extends State<GameSpinModeScreen> with TickerProv
     if (!mounted) return;
     setState(() {_displayJudge = judge;});
     _judgeController.forward(from: 0.0);
-  }
-
-  // 판정 색상
-  Color getJudgeColor() {
-    switch (_displayJudge) {
-      case "PERFECT":
-        return Colors.white;
-      case "GREAT":
-        return Colors.yellow;
-      case "GOOD":
-        return Colors.green;
-      case "BAD":
-        return Colors.orange;
-      case "MISS":
-        return Colors.red;
-      default:
-        return Colors.white;
-    }
   }
 
   // 게임 종료
@@ -279,7 +262,7 @@ class _GameSpinModeScreenState extends State<GameSpinModeScreen> with TickerProv
                                   _displayJudge!,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: getJudgeColor(),
+                                    color: Util.getJudgeColor(_displayJudge),
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                   ),

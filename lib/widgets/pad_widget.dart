@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dungtak/constants/game_constants.dart';
+import 'package:dungtak/constants/constants.dart';
 import 'package:flutter/material.dart';
 
 class PadWidget extends StatefulWidget {
@@ -35,7 +35,7 @@ class _PadWidgetState extends State<PadWidget> {
   // Build
   @override
   Widget build(BuildContext context,) {
-    final padColor = widget.activeColor ?? GameConstants.noteColorActive;
+    final padColor = widget.activeColor ?? Constants.noteColorActive;
 
     return Expanded(
       child: GestureDetector(

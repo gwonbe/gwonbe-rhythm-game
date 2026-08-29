@@ -3,29 +3,38 @@ import 'dart:async';
 import 'package:dungtak/constants/constants.dart';
 import 'package:dungtak/engine/game_engine.dart';
 import 'package:dungtak/engine/game_state.dart';
+import 'package:dungtak/engine/rotation_manager.dart';
 import 'package:dungtak/model/song.dart';
 import 'package:dungtak/screens/result_screen.dart';
 import 'package:dungtak/util/util.dart';
 import 'package:dungtak/widgets/pad_widget.dart';
+import 'package:dungtak/widgets/spin_board_widget.dart';
 
 import 'package:flutter/material.dart';
 
-class GameMusicModeScreen extends StatefulWidget {
+class GameScreen extends StatefulWidget {
   final Song song;
+  final GameMode mode;
 
-  const GameMusicModeScreen({
+  const GameScreen({
     super.key,
     required this.song,
+    required this.mode,
   });
 
   @override
-  State<GameMusicModeScreen> createState() => _GameMusicModeScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTickerProviderStateMixin {
+class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   late final GameEngine engine;
   StreamSubscription<Duration>? subscription;
+
+  // Spin Mode
+  RotationManager? rotationManager;
+  AnimationController? _rotationController;
+  Duration _lastRotationElapsed = Duration.zero;
 
   // 판정 표시
   late AnimationController _judgeController;
@@ -34,13 +43,23 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
   String? _displayJudge;
 
   // 결과
-  bool _resultShown = false; // 결과 화면 중복 진입 방지
+  bool _resultShown = false;
 
   @override
   void initState() {
     super.initState();
 
     engine = GameEngine();
+
+  // Spin Mode 초기화
+    if (widget.mode == GameMode.spin) {
+      rotationManager = RotationManager();
+
+      _rotationController = AnimationController(
+        vsync: this,
+        duration: const Duration(days: 1),
+      )..addListener(_updateRotation);
+    }
 
     _judgeController = AnimationController(
       vsync: this,
@@ -67,24 +86,53 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
     if (!mounted) return;
 
     subscription = engine.audioManager.positionStream.listen(
-      (position) {
+          (position) {
         final currentTime = position.inMilliseconds;
-        engine.update(currentTime); // 음악 position 기준으로 게임 상태 업데이트
+        engine.update(currentTime);
+
         if (!mounted) return;
+
         setState(() {});
         _checkGameFinished();
       },
     );
+
+  // Spin Mode 회전 시작
+    if (widget.mode == GameMode.spin) {
+      _rotationController?.repeat();
+    }
 
     await engine.start();
   }
 
   @override
   void dispose() {
+    _rotationController?.dispose();
     _judgeController.dispose();
     subscription?.cancel();
     engine.audioManager.dispose();
     super.dispose();
+  }
+
+  // 회전 업데이트
+  void _updateRotation() {
+    if (rotationManager == null) return;
+    if (_rotationController == null) return;
+
+    final elapsed = _rotationController!.lastElapsedDuration ?? Duration.zero;
+    final delta = elapsed - _lastRotationElapsed;
+
+    _lastRotationElapsed = elapsed;
+
+    if (delta <= Duration.zero) return;
+
+    rotationManager!.update(
+      delta.inMicroseconds / 1000000.0,
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   // Pad
@@ -99,30 +147,77 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
     return note?.pad == pad;
   }
 
+  // 현재 활성화된 패드
+  Set<int> get activePads {
+    final manager = engine.noteManager;
+
+    if (manager == null) return {};
+
+    return manager.activeNotes
+        .map((note) => note.pad)
+        .toSet();
+  }
+
   // 패드를 눌렀을 때
   void onPadPressed(int pad) {
     final judge = engine.onPadPressed(pad);
-    if (judge != null) showJudge(judge.name.toUpperCase());
-    if (mounted) setState(() {}); // 터치 직후 UI를 즉시 갱신
-    _checkGameFinished();
-  }
 
-  // 패드 진행상태 반환
-  double getPadProgress(int pad) {
-    return engine.noteManager?.getPadProgress(pad, engine.currentTime.inMilliseconds) ?? 0.0;
+    if (judge != null) {
+      showJudge(judge.name.toUpperCase());
+    }
+
+    if (mounted) setState(() {});
+
+    _checkGameFinished();
   }
 
   // 판정
   void showJudge(String judge) {
     if (!mounted) return;
-    setState(() {_displayJudge = judge;});
+
+    setState(() {
+      _displayJudge = judge;
+    });
+
     _judgeController.forward(from: 0.0);
+  }
+
+  // 패드 진행상태 반환
+  double getPadProgress(int pad) {
+    return engine.noteManager?.getPadProgress(
+      pad,
+      engine.currentTime.inMilliseconds,
+    ) ?? 0.0;
   }
 
   // 해당 패드의 색상 반환
   Color getPadColor(int pad) {
+    final manager = engine.noteManager;
+
+    if (manager == null) {
+      return Constants.noteColorInactive;
+    }
+
     final currentTime = engine.currentTime.inMilliseconds;
-    return engine.noteManager?.getPadColor(pad, currentTime) ?? Constants.noteColorInactive;
+
+    if (widget.mode == GameMode.music) {
+      return manager.getPadColor(
+        pad,
+        currentTime,
+      );
+    }
+
+  // Spin Mode
+    for (final note in manager.activeNotes) {
+      if (note.pad == pad) {
+        return manager.getNoteColor(
+          note,
+          currentTime,
+        );
+      }
+    }
+
+    return Constants.noteColorActive;
   }
 
   // 게임 종료
@@ -132,6 +227,9 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
     if (_resultShown) return;
 
     _resultShown = true;
+
+  // Spin Mode 회전 정지
+    _rotationController?.stop();
 
     Navigator.pushReplacement(
       context,
@@ -144,6 +242,88 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
+    );
+  }
+
+  // Music Mode 패드
+  Widget _buildMusicBoard() {
+    return Expanded(
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                PadWidget(
+                  index: 0,
+                  isEffectActive: isPadActive(0),
+                  isEffect: isPadEffect(0),
+                  onTap: () => onPadPressed(0),
+                  activeColor: getPadColor(0),
+                ),
+                PadWidget(
+                  index: 1,
+                  isEffectActive: isPadActive(1),
+                  isEffect: isPadEffect(1),
+                  onTap: () => onPadPressed(1),
+                  activeColor: getPadColor(1),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                PadWidget(
+                  index: 2,
+                  isEffectActive: isPadActive(2),
+                  isEffect: isPadEffect(2),
+                  onTap: () => onPadPressed(2),
+                  activeColor: getPadColor(2),
+                ),
+                PadWidget(
+                  index: 3,
+                  isEffectActive: isPadActive(3),
+                  isEffect: isPadEffect(3),
+                  onTap: () => onPadPressed(3),
+                  activeColor: getPadColor(3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Spin Mode 회전판
+  Widget _buildSpinBoard() {
+    return Expanded(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SpinBoardWidget(
+            rotationAngle: rotationManager?.angle ?? 0.0,
+            activePads: activePads,
+            getPadColor: getPadColor,
+            onPadPressed: onPadPressed,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 게임 화면
+  Widget _buildGameBoard() {
+    if (widget.mode == GameMode.music) {
+      return _buildMusicBoard();
+    }
+
+    if (widget.mode == GameMode.spin) {
+      return _buildSpinBoard();
+    }
+
+    return const Expanded(
+      child: SizedBox(),
     );
   }
 
@@ -256,57 +436,18 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
               ),
             ),
 
-            // 패드 영역
-            Expanded(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        PadWidget(
-                          index: 0,
-                          isEffectActive: isPadActive(0),
-                          isEffect: isPadEffect(0),
-                          onTap: () => onPadPressed(0),
-                          activeColor: getPadColor(0),
-                        ),
-                        PadWidget(
-                          index: 1,
-                          isEffectActive: isPadActive(1),
-                          isEffect: isPadEffect(1),
-                          onTap: () => onPadPressed(1),
-                          activeColor: getPadColor(1),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        PadWidget(
-                          index: 2,
-                          isEffectActive: isPadActive(2),
-                          isEffect: isPadEffect(2),
-                          onTap: () => onPadPressed(2),
-                          activeColor: getPadColor(2),
-                        ),
-                        PadWidget(
-                          index: 3,
-                          isEffectActive: isPadActive(3),
-                          isEffect: isPadEffect(3),
-                          onTap: () => onPadPressed(3),
-                          activeColor: getPadColor(3),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // 게임 영역
+            _buildGameBoard(),
+
           ],
         ),
       ),
     );
   }
 
+}
+
+enum GameMode {
+  music,
+  spin,
 }

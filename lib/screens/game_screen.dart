@@ -193,31 +193,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // 해당 패드의 색상 반환
   Color getPadColor(int pad) {
     final manager = engine.noteManager;
-
-    if (manager == null) {
-      return Constants.noteColorInactive;
-    }
+    if (manager == null) return Constants.noteColorInactive;
 
     final currentTime = engine.currentTime.inMilliseconds;
+    final padColor = Constants.padColors[pad];
 
-    if (widget.mode == GameMode.music) {
-      return manager.getPadColor(
-        pad,
-        currentTime,
-      );
-    }
+    if (widget.mode == GameMode.music) return manager.getPadColor(pad, currentTime, padColor);
 
-  // Spin Mode
+    // Spin Mode
     for (final note in manager.activeNotes) {
       if (note.pad == pad) {
-        return manager.getNoteColor(
-          note,
-          currentTime,
-        );
+        final progress = manager.getProgress(note, currentTime);
+        return Color.lerp(padColor, Constants.noteColorInactive, progress)!;
       }
+
     }
 
-    return Constants.noteColorActive;
+    return padColor;
   }
 
   // 게임 종료

@@ -129,12 +129,30 @@ class NoteManager {
   }
 
   // 패드의 현재 색상
-  Color getPadColor(int pad, int currentTime) {
-    final target = getActiveNote(pad);
-    if (target == null) return Constants.noteColorInactive;
+  Color getPadColor(int pad, int currentTime, Color activeColor) {
+    Note? target;
 
-    final progress = getProgress(target, currentTime);
-    return Color.lerp(Constants.noteColorActive, Constants.noteColorInactive, progress)!;
+    for (final note in notes) {
+      if (note.pad != pad) continue;
+      if (note.state != NoteState.active) continue;
+
+      target = note;
+      break;
+
+    }
+
+    if (target == null) {
+      return Constants.noteColorInactive;
+    }
+
+    final startTime = target.time - appearTime;
+    final progress = ((currentTime - startTime) / appearTime).clamp(0.0, 1.0);
+
+    return Color.lerp(
+      activeColor,
+      Constants.noteColorInactive,
+      progress,
+    )!;
   }
 
   // 특정 노트의 현재 색상

@@ -9,6 +9,13 @@ class Constants {
   static const Color noteColorActive = Color(0xFF2196F3);
   static const Color noteColorInactive = Color(0xFF555555);
 
+  static final List<Color> padColors = [
+    const Color(0xFF00BFFF),
+    const Color(0xFFFF3B6B),
+    const Color(0xFF9C5CFF),
+    const Color(0xFFFFB020),
+  ];
+
   // 폰트 색상
   static const Color judgeFontcolorPerfect = Colors.white;
   static const Color judgeFontcolorGreat = Colors.yellow;

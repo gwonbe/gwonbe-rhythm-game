@@ -122,7 +122,7 @@ class _GameMusicModeScreenState extends State<GameMusicModeScreen> with SingleTi
   // 해당 패드의 색상 반환
   Color getPadColor(int pad) {
     final currentTime = engine.currentTime.inMilliseconds;
-    return engine.noteManager?.getPadColor(pad, currentTime) ?? Constants.noteColorInactive;
+    return engine.noteManager?.getPadColor(pad, currentTime, Constants.padColors[pad]) ?? Constants.noteColorInactive;
   }
 
   // 게임 종료

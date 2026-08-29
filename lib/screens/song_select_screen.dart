@@ -1,21 +1,26 @@
 import 'dart:async';
-
 import 'package:audioplayers/audioplayers.dart';
-
-import 'package:dungtak/data/songs.dart';
 import 'package:dungtak/model/song.dart';
-import 'package:dungtak/screens/music_mode_game_screen.dart';
-
 import 'package:flutter/material.dart';
 
-class MusicModeScreen extends StatefulWidget {
-  const MusicModeScreen({super.key});
+class SongSelectScreen extends StatefulWidget {
+
+  final List<Song> songs;
+  final Widget Function(Song song) gameScreenBuilder;
+  final VoidCallback onHome;
+
+  const SongSelectScreen({
+    super.key,
+    required this.songs,
+    required this.gameScreenBuilder,
+    required this.onHome,
+  });
 
   @override
-  State<MusicModeScreen> createState() => _MusicModeScreenState();
+  State<SongSelectScreen> createState() => _SongSelectScreenState();
 }
 
-class _MusicModeScreenState extends State<MusicModeScreen> {
+class _SongSelectScreenState extends State<SongSelectScreen> {
 
   // 곡 미리듣기
   final AudioPlayer _previewPlayer = AudioPlayer();
@@ -27,46 +32,39 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
 
   // 곡
   int _selectedIndex = 0;
-  Song get _selectedSong => musicModeSongs[_selectedIndex];
+  Song get _selectedSong => widget.songs[_selectedIndex];
 
   // initState
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _playPreview();
     });
   }
 
-  // dispose
   @override
   void dispose() {
     _previewTimer?.cancel();
     _previewDelayTimer?.cancel();
     _previewPlayer.dispose();
-
     super.dispose();
   }
 
-  // 곡 이동 - amount 만큼
+  // 곡 이동
   void _move(int amount) {
-    if (musicModeSongs.isEmpty) return;
+    if (widget.songs.isEmpty) return;
 
     int newIndex = _selectedIndex + amount;
     if (newIndex < 0) newIndex = 0;
-    if (newIndex >= musicModeSongs.length) newIndex = musicModeSongs.length - 1;
-
-    if (newIndex == _selectedIndex) return; // 실제로 곡이 바뀐 경우
-
-    setState(() {
-      _selectedIndex = newIndex;
-    });
+    if (newIndex >= widget.songs.length) newIndex = widget.songs.length - 1;
+    if (newIndex == _selectedIndex) return;
+    setState(() {_selectedIndex = newIndex;});
 
     _playPreview();
   }
 
-  // 미리듣기 재생
+  // 미리듣기
   Future<void> _playPreview() async {
     _previewTimer?.cancel();
     _previewDelayTimer?.cancel();
@@ -76,18 +74,15 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
     await _previewPlayer.setSource(AssetSource(song.musicPath.replaceFirst("assets/", "")));
     await _previewPlayer.seek(song.previewStart);
     await _previewPlayer.resume();
-
     _previewTimer = Timer(
-      song.previewEnd - song.previewStart,
-      () async {
-        await _previewPlayer.pause();
-        _previewDelayTimer = Timer(
-          const Duration(seconds: 2),
-          () {
-            if (mounted) _playPreview();
-          },
-        );
+      song.previewEnd - song.previewStart, () async {
+      await _previewPlayer.pause();
+      _previewDelayTimer = Timer(
+        const Duration(seconds: 2), () {
+        if (mounted) _playPreview();
       },
+      );
+    },
     );
   }
 
@@ -103,9 +98,7 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
       context,
       PageRouteBuilder(
         pageBuilder: (_, animation, secondaryAnimation) {
-          return MusicModeGameScreen(
-            song: _selectedSong,
-          );
+          return widget.gameScreenBuilder(_selectedSong);
         },
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
@@ -113,12 +106,6 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
     );
   }
 
-  // 홈으로 이동
-  void _goHome() {
-    Navigator.popUntil(context, (route) => route.isFirst);
-  }
-
-  // 위젯 빌드
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,18 +130,13 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(
-                    height: 3,
-                  ),
+                  const SizedBox(height: 3),
                   Text(
                     _selectedSong.artist,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
                   ),
                 ],
               ),
@@ -168,65 +150,40 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
                     if (details.primaryVelocity == null) {
                       return;
                     }
-                    // 좌우 이동 동작
                     if (details.primaryVelocity! < 0) {
                       _move(1);
                     } else if (details.primaryVelocity! > 0) {
                       _move(-1);
                     }
                   },
-                  // 좌우 이동 버튼 & 앨범 이미지
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
-                        children: [
-                          _ArrowButton(
-                            icon: Icons.keyboard_double_arrow_left,
-                            enabled: _selectedIndex > 0,
-                            onPressed: () {
-                              _move(-1 * _jumpCount);
-                            },
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          _ArrowButton(
-                            icon: Icons.chevron_left,
-                            enabled: _selectedIndex > 0,
-                            onPressed: () {
-                              _move(-1);
-                            },
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          _buildAlbum(),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          _ArrowButton(
-                            icon: Icons.chevron_right,
-                            enabled:
-                            _selectedIndex < musicModeSongs.length - 1,
-                            onPressed: () {
-                              _move(1);
-                            },
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          _ArrowButton(
-                            icon: Icons.keyboard_double_arrow_right,
-                            enabled:
-                            _selectedIndex < musicModeSongs.length - 1,
-                            onPressed: () {
-                              _move(_jumpCount);
-                            },
-                          ),
-                        ],
+                      _ArrowButton(
+                        icon: Icons.keyboard_double_arrow_left,
+                        enabled: _selectedIndex > 0,
+                        onPressed: () {_move(-_jumpCount);},
+                      ),
+                      const SizedBox(width: 8),
+                      _ArrowButton(
+                        icon: Icons.chevron_left,
+                        enabled: _selectedIndex > 0,
+                        onPressed: () {_move(-1);},
+                      ),
+                      const SizedBox(width: 20),
+                      _buildAlbum(),
+                      const SizedBox(width: 20),
+                      _ArrowButton(
+                        icon: Icons.chevron_right,
+                        enabled: _selectedIndex < widget.songs.length - 1,
+                        onPressed: () {_move(1);},
+                      ),
+                      const SizedBox(width: 8),
+                      _ArrowButton(
+                        icon: Icons.keyboard_double_arrow_right,
+                        enabled: _selectedIndex < widget.songs.length - 1,
+                        onPressed: () {_move(_jumpCount);},
                       ),
                     ],
                   ),
@@ -243,7 +200,7 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
                     child: SizedBox(
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _goHome,
+                        onPressed: widget.onHome,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A1A1A),
                           foregroundColor: Colors.white,
@@ -254,7 +211,7 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 18.0),
+                  const SizedBox(width: 18),
                   Expanded(
                     child: SizedBox(
                       height: 56,
@@ -290,11 +247,10 @@ class _MusicModeScreenState extends State<MusicModeScreen> {
         border: Border.all(color: Colors.white24, width: 1),
       ),
       child: _selectedSong.imagePath.isEmpty
-        ? const Icon(Icons.music_note, color: Colors.white, size: 80)
-        : ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.asset(_selectedSong.imagePath, fit: BoxFit.cover)),
+          ? const Icon(Icons.music_note, color: Colors.white, size: 80)
+          : ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.asset(_selectedSong.imagePath, fit: BoxFit.cover)),
     );
   }
-
 }
 
 // 화살표 버튼

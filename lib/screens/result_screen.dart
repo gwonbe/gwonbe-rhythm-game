@@ -1,11 +1,11 @@
 import 'package:dungtak/engine/score_manager.dart';
-
 import 'package:flutter/material.dart';
 
-class MusicModeResultScreen extends StatelessWidget {
+class ResultScreen extends StatelessWidget {
+
   final ScoreManager scoreManager;
 
-  const MusicModeResultScreen({
+  const ResultScreen({
     super.key,
     required this.scoreManager,
   });
@@ -52,7 +52,7 @@ class MusicModeResultScreen extends StatelessWidget {
                   // 판정 결과
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
+                      padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -76,9 +76,7 @@ class MusicModeResultScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () {Navigator.popUntil(context, (route) => route.isFirst);},
                 child: const Text("HOME"),
               )
             ],
@@ -90,12 +88,19 @@ class MusicModeResultScreen extends StatelessWidget {
 }
 
 class _ResultRow extends StatelessWidget {
+
   final String title;
   final int value;
   final bool isBold;
-  const _ResultRow({ required this.title, required this.value, required this.isBold });
 
-  @override Widget build(BuildContext context) {
+  const _ResultRow({
+    required this.title,
+    required this.value,
+    required this.isBold,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -104,10 +109,12 @@ class _ResultRow extends StatelessWidget {
             width: 200,
             child: Text(
               title,
-              style: isBold? TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold) : TextStyle(color: Colors.white, fontSize: 20,),
+              style: isBold
+                  ? const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+                  : const TextStyle(color: Colors.white, fontSize: 20),
             ),
           ),
-          SizedBox(width: 5,),
+          const SizedBox(width: 5),
           Expanded(
             child: Text(
               value.toString(),

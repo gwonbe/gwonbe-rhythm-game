@@ -1,12 +1,10 @@
+import 'package:dungtak/constants/game_constants.dart';
 import 'package:dungtak/engine/score_manager.dart';
 import 'package:dungtak/model/note.dart';
 
 import 'package:flutter/material.dart';
 
 class NoteManager {
-
-  final _tag = "[NoteManager]";
-
   static const Color noteColor = Colors.blue;
   static const int appearTime = 800; // 노트 색상이 바뀌는 시작하는 시간
   static const int missWindow = 400; // 노트 시간이 지난 후에도 활성화 상태를 유지하는 시간
@@ -30,7 +28,6 @@ class NoteManager {
       // ACTIVE -> MISS
       if (note.state == NoteState.active && currentTime > note.time + missWindow) {
         note.state = NoteState.miss;
-        debugPrint("$_tag [update] MISS : id=${note.id}, pad=${note.pad}, noteTime=${note.time}, currentTime=$currentTime");
       }
     }
   }
@@ -46,71 +43,76 @@ class NoteManager {
     return false;
   }
 
+  // 현재 활성화된 모든 노트
   List<Note> get activeNotes {
     return notes.where((note) => note.state == NoteState.active).toList();
+  }
+
+  // 특정 패드의 현재 노트
+  Note? getActiveNote(int pad) {
+    for (final note in notes) {
+      if (note.pad == pad && note.state == NoteState.active) {
+        return note;
+      }
+    }
+
+    return null;
   }
 
   // HIT
   Judge? hit(int pad, int currentTime) {
     Note? targetNote;
+    int smallestDistance = 1 << 30;
 
-    // 현재 패드에서 활성화된 노트 중 현재 시간과 가장 가까운 노트를 찾는다.
+    // 현재 패드에서 가장 가까운 활성 노트를 찾는다.
     for (final note in notes) {
       if (note.pad != pad) continue;
       if (note.state != NoteState.active) continue;
-      targetNote = note;
-      break;
+
+      final distance = (currentTime - note.time).abs();
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        targetNote = note;
+      }
     }
 
     // 활성 노트가 없을 때
     if (targetNote == null) return null;
 
-    // hit 처리
-    final startTime = targetNote.time - appearTime;
-    final elapsed = currentTime - startTime;
+    // 현재 노트의 진행률
+    final progress = getProgress(targetNote, currentTime);
+
+    // 판정 결정
+    final judge = _getJudge(progress);
+
+    // HIT 처리
     targetNote.state = NoteState.hit;
-
-    if (elapsed <= 500) {
-      return Judge.perfect;
-    } else if (elapsed <= 700) {
-      return Judge.great;
-    } else if (elapsed <= 900) {
-      return Judge.good;
-    } else {
-      return Judge.bad;
-    }
+    
+    return judge;
   }
 
-  // 색상 계산
-  Color getNoteColor(Note note, int currentTime) {
-    final startTime = note.time - appearTime;
-    if (currentTime <= startTime) {
-      return noteColor;
-    }
+  // 진행률에 따른 판정
+  Judge _getJudge(double progress) {
 
-    final elapsed = currentTime - startTime;
-    if (elapsed >= appearTime) {
-      return Colors.grey;
-    }
+    // 0.0 = 노트가 처음 등장한 순간, 1.0 = 노트 타이밍에 도달한 순간
 
-    final progress = elapsed / appearTime;
-    return Color.lerp(noteColor, Colors.grey, progress,)!;
+    if (progress <= 0.20) return Judge.perfect;
+    if (progress <= 0.45) return Judge.great;
+    if (progress <= 0.70) return Judge.good;
+    return Judge.bad;
   }
 
-  // 진행상태 반환
+  // 노트 등장 후 현재 진행률
   double getProgress(Note note, int currentTime) {
+    // 0.0 = 처음 등장, 1.0 = 정확한 노트 시간
     final start = note.time - appearTime;
 
-    if (currentTime <= start) {
-      return 0.0;
-    } else if (currentTime >= note.time) {
-      return 1.0;
-    } else {
-      return (currentTime - start) / appearTime;
-    }
+    if (currentTime <= start) return 0.0;
+    if (currentTime >= note.time) return 1.0;
+    return (currentTime - start) / appearTime;
   }
 
-  // 패드 진행상태 반환
+  // 패드의 현재 노트 진행률
   double getPadProgress(int pad, int currentTime) {
     Note? target;
     int smallestDistance = 1 << 30;
@@ -130,7 +132,22 @@ class NoteManager {
     return getProgress(target, currentTime);
   }
 
-  // 노트 반환
+  // 패드의 현재 색상
+  Color getPadColor(int pad, int currentTime) {
+    final target = getActiveNote(pad);
+    if (target == null) return GameConstants.noteColorInactive;
+
+    final progress = getProgress(target, currentTime);
+    return Color.lerp(GameConstants.noteColorActive, GameConstants.noteColorInactive, progress)!;
+  }
+
+  // 특정 노트의 현재 색상
+  Color getNoteColor(Note note, int currentTime) {
+    final progress = getProgress(note, currentTime);
+    return Color.lerp(GameConstants.noteColorActive, GameConstants.noteColorInactive, progress)!;
+  }
+
+  // Effect
   List<Note> getTriggeredNotes(int currentTime) {
     final result = <Note>[];
 
@@ -147,7 +164,7 @@ class NoteManager {
     return result;
   }
 
-  // Effect
+  // EffectNote 찾기
   Note? getEffectNote(int currentTime) {
     for (final note in notes) {
       if (note.state != NoteState.active) {

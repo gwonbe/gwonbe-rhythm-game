@@ -33,7 +33,7 @@ class GameEngine {
   // 전체 진행
   GameState state = GameState.ready;
 
-  // 음악 파일 가져오고 준비 상태로 전환
+  // 음악 파일과 비트맵 로드
   Future<void> loadSong(Song song) async {
     currentSong = song;
     beatMap = await loader.load(song.beatMapPath);
@@ -90,7 +90,7 @@ class GameEngine {
       missStartTime = currentTime;
     }
 
-    // MISS 표시
+    // MISS 표시 종료
     if (lastMissedNote != null) {
       if (currentTime - missStartTime >= 500) {
         lastMissedNote = null;
@@ -106,33 +106,37 @@ class GameEngine {
     if (beatMap == null || noteManager == null) return;
     if (noteManager!.notes.isEmpty) return;
 
-    final allFinished = noteManager!.notes.every((note) => note.state == NoteState.hit || note.state == NoteState.miss,);
+    final allFinished = noteManager!.notes.every((note) => note.state == NoteState.hit || note.state == NoteState.miss);
     if (!allFinished) return;
 
     final lastNoteTime = noteManager!.notes.map((note) => note.time).reduce((a, b) => a > b ? a : b,);
     if (currentTime > lastNoteTime + 300) finish();
   }
 
-  // 터치했을 때
-
-  Judge? onPadPressed(int pad,) {
+  // 패드 터치했을 때
+  Judge? onPadPressed(int pad) {
     if (state != GameState.playing) return null;
     if (noteManager == null || beatMap == null || beatMap!.notes.isEmpty) return null;
 
+    // 터치한 순간에 노트 상태 업데이트
     final touchTime = audioManager.currentPosition.inMilliseconds;
-    noteManager!.update(touchTime,);
+    noteManager!.update(touchTime);
 
+    // 판정
     final judge = noteManager!.hit(pad, touchTime);
     if (judge == null) return null;
 
     // 점수
     final unitScore = 100 / beatMap!.notes.length;
+
+    // 점수 반영
     scoreManager.addJudge(judge, unitScore);
     lastJudge = judge;
     judgeStartTime = touchTime;
 
     // 모든 노트가 처리됐는지 즉시 확인
     _checkFinished(touchTime);
+
     return judge;
   }
 

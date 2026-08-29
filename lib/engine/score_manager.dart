@@ -8,7 +8,7 @@ enum Judge {
 
 class ScoreManager {
 
-  // 판정
+  // 판정 횟수
   int perfect = 0;
   int great = 0;
   int good = 0;
@@ -21,7 +21,6 @@ class ScoreManager {
   double score = 0;
 
   void addJudge(Judge judge, double unitScore) {
-
     switch (judge) {
 
       case Judge.perfect:
@@ -52,7 +51,6 @@ class ScoreManager {
         miss++;
         combo = 0;
         break;
-
     }
 
     if (combo > maxCombo) {

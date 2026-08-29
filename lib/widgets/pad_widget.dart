@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dungtak/constants/game_constants.dart';
 import 'package:flutter/material.dart';
 
 class PadWidget extends StatefulWidget {
@@ -7,6 +8,7 @@ class PadWidget extends StatefulWidget {
   final bool isEffectActive; // 현재 노트가 파란색으로 활성화되어 있는지
   final bool isEffect; // 노트 타격 순간의 이펙트
   final VoidCallback onTap;
+  final Color? activeColor;
 
   const PadWidget({
     super.key,
@@ -14,6 +16,7 @@ class PadWidget extends StatefulWidget {
     required this.isEffectActive,
     required this.isEffect,
     required this.onTap,
+    this.activeColor,
   });
 
   @override
@@ -21,25 +24,7 @@ class PadWidget extends StatefulWidget {
 }
 
 class _PadWidgetState extends State<PadWidget> {
-  bool _pressed = false;
   Timer? _pressTimer;
-
-  // Pointer Down
-  void _press() {
-    _pressTimer?.cancel();
-    setState(() { _pressed = true; });
-    widget.onTap(); // 판정은 즉시 실행
-
-    // 시각적인 눌림 효과만 100ms 유지
-    _pressTimer = Timer(
-      const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        setState(() {
-          _pressed = false;
-        });
-      },
-    );
-  }
 
   @override
   void dispose() {
@@ -48,37 +33,31 @@ class _PadWidgetState extends State<PadWidget> {
   }
 
   // Build
-
   @override
-  Widget build(BuildContext context) {
-    Color backgroundColor;
-
-    if (_pressed) {
-      backgroundColor = Colors.blue.shade600;
-    } else if (widget.isEffectActive) {
-      backgroundColor = Colors.blue;
-    } else {
-      backgroundColor = Colors.grey.shade800;
-    }
+  Widget build(BuildContext context,) {
+    final padColor = widget.activeColor ?? GameConstants.noteColorActive;
 
     return Expanded(
-      child: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: (_) {
-          _press();
-        },
-        child: Container(
-          margin: const EdgeInsets.all(3),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 50),
+          margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(12),
+            color: widget.isEffectActive ? padColor : const Color(0xFF202020),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: widget.isEffectActive ? padColor : Colors.white24,
+              width: 2,
+            ),
           ),
           child: Center(
             child: Text(
-              'PAD ${widget.index + 1}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
+              "PAD ${widget.index + 1}",
+              style: TextStyle(
+                color: widget.isEffectActive ? Colors.white : Colors.white54,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -86,4 +65,5 @@ class _PadWidgetState extends State<PadWidget> {
       ),
     );
   }
+
 }

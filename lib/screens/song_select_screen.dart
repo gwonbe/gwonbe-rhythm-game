@@ -38,6 +38,9 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
   @override
   void initState() {
     super.initState();
+
+    _loadSongDurations();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _playPreview();
     });
@@ -49,6 +52,25 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
     _previewDelayTimer?.cancel();
     _previewPlayer.dispose();
     super.dispose();
+  }
+
+  // 음악 전체 시간 로드
+  Future<void> _loadSongDurations() async {
+    for (final song in widget.songs) {
+
+      final player = AudioPlayer();
+
+      try {
+        await player.setSource(AssetSource(song.musicPath.replaceFirst("assets/", "")));
+      } catch (e) {
+        debugPrint("[SongSelectScreen] [loadSongDurations] error : $e");
+      } finally {
+        await player.dispose();
+      }
+
+    }
+
+    if (mounted) setState(() {});
   }
 
   // 곡 이동
@@ -74,15 +96,18 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
     await _previewPlayer.setSource(AssetSource(song.musicPath.replaceFirst("assets/", "")));
     await _previewPlayer.seek(song.previewStart);
     await _previewPlayer.resume();
+
     _previewTimer = Timer(
       song.previewEnd - song.previewStart, () async {
-      await _previewPlayer.pause();
-      _previewDelayTimer = Timer(
-        const Duration(seconds: 2), () {
-        if (mounted) _playPreview();
+        await _previewPlayer.pause();
+        _previewDelayTimer = Timer(
+          const Duration(seconds: 2), () {
+            if (mounted) {
+              _playPreview();
+            }
+          },
+        );
       },
-      );
-    },
     );
   }
 
@@ -106,6 +131,16 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
     );
   }
 
+  // 시간 표시
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return "-";
+
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+
+    return "$minutes:${seconds.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,7 +151,7 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
 
             // 음악 제목 & 아티스트
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 5.0),
+              padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 3.0),
               child: Column(
                 children: [
                   Text(
@@ -124,19 +159,21 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     _selectedSong.artist,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                    style: const TextStyle(color: Colors.white54, fontSize: 15),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDuration(_selectedSong.duration),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white38, fontSize: 14),
                   ),
                 ],
               ),

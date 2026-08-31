@@ -1,5 +1,5 @@
 class Song {
-  
+
   final String title;
   final String artist;
   final String musicPath;
@@ -7,6 +7,7 @@ class Song {
   final String imagePath;
   final Duration previewStart;
   final Duration previewEnd;
+  final Duration? duration;
 
   Song({
     required this.title,
@@ -16,6 +17,7 @@ class Song {
     required this.imagePath,
     required this.previewStart,
     required this.previewEnd,
+    required this.duration,
   });
 
 }
